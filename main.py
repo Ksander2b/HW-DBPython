@@ -124,71 +124,52 @@ def delete_client(conn, client_id):
             )
         conn.commit()
     pass
+            
 
-
-def _find_client_by_name(conn, first_name):
-    with conn.cursor() as cur:
-        cur.execute('''
-        SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Clients_phones cp ON c.id = cp.client_id
-        JOIN Phones p ON cp.phone_id = p.id
-        WHERE c.name = %s;''',
-        (first_name, ))
-        return print(cur.fetchone())
-
-def _find_client_by_surname(conn, last_name):
-    with conn.cursor() as cur:
+def find_client(conn, data):
+     with conn.cursor() as cur:
+        cur.execute(
+            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+            JOIN Clients_phones cp ON c.id = cp.client_id
+            JOIN Phones p ON cp.phone_id = p.id
+            WHERE c.name = %s;''',
+            (data, )
+            )
+        result = cur.fetchall()
+        if len(result) > 0:
+            print(result)
         cur.execute(
             '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
             JOIN Clients_phones cp ON c.id = cp.client_id
             JOIN Phones p ON cp.phone_id = p.id
             WHERE c.surname = %s;''',
-            (last_name, ))
-        return print(cur.fetchone())
-
-def _find_client_by_email(conn, email):
-    with conn.cursor() as cur:
+            (data, )
+            )
+        result = cur.fetchall()
+        if len(result) > 0:
+            print(result)
         cur.execute(
             '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
             JOIN Clients_phones cp ON c.id = cp.client_id
             JOIN Phones p ON cp.phone_id = p.id
             WHERE c.email = %s;''',
-            (email, ))
-        return print(cur.fetchone())
-
-def _find_client_by_phone(conn, phone):
-    with conn.cursor() as cur:
-        cur.execute('''
-        SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Clients_phones cp ON c.id = cp.client_id
-        JOIN Phones p ON cp.phone_id = p.id
-        WHERE p.phone = %s;''',
-        (phone, ))
-        return print(cur.fetchone())
-            
-
-def find_client(conn, first_name=None, last_name=None, email=None, phone=None):
-    if first_name != None:
-        _find_client_by_name(conn, first_name)
-    if last_name != None:
-        _find_client_by_surname(conn, last_name)
-    if email != None:
-        _find_client_by_email(conn, email)
-    if phone != None: 
-        _find_client_by_phone(conn, phone)
-
-        
-
-
-    pass
+            (data, )
+            )
+        result = cur.fetchall()
+        if len(result) > 0:
+            print(result)
+        cur.execute(
+            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+            JOIN Clients_phones cp ON c.id = cp.client_id
+            JOIN Phones p ON cp.phone_id = p.id
+            WHERE p.phone = %s;''',
+            (data, )
+            )
+        result = cur.fetchall()
+        if len(result) > 0:
+            print(result)
+     pass
 
 if __name__ == '__main__':
-    conn = psycopg2.connect(database = 'client_management', user = 'postgres', password = 'Fozeqwxu23')
-    # create_db(conn)
-    # add_client(conn,'Alex', 'Bogatyrev', 'ssss@kfd.com', '+79250466002')
-    # add_client(conn,'Ann', 'Chernavina', 'anchem@jdf.com', '+7945900456')
-    # add_phone(conn, '+7945678456', '2')
-    # change_client(conn,'2', 'Anncher', 'Cher', 'anchem@jdf.com', '+7000000000')
-    # delete_phone (conn, '+7000000000')
-    # delete_client(conn, 1)
-    find_client(conn, 'Сher')
+    conn = psycopg2.connect(database = 'client_management', user = 'postgres', password = '')
+    
