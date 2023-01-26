@@ -1,175 +1,168 @@
 import psycopg2
 
 
-def create_db(conn):
-    with conn.cursor() as cur:
-        cur.execute(
-            '''CREATE TABLE IF NOT EXISTS Clients
-            (id SERIAL PRIMARY KEY, 
-            name VARCHAR NOT NULL, 
-            surname VARCHAR NOT NULL, 
-            email VARCHAR NOT NULL);'''
-            )
-        cur.execute(
-            '''CREATE TABLE IF NOT EXISTS Phones
-            (id SERIAL PRIMARY KEY, 
-            phone VARCHAR NOT NULL);'''
-            )
-        cur.execute(
-            '''CREATE TABLE IF NOT EXISTS Clients_phones
-            (client_id INTEGER REFERENCES Clients(id),
-            phone_id INTEGER REFERENCES Phones(id),
-            CONSTRAINT cp PRIMARY KEY(client_id, phone_id));'''
-            )
-        conn.commit()
+def create_db(cur):
+    cur.execute(
+        '''CREATE TABLE IF NOT EXISTS Clients
+        (id SERIAL PRIMARY KEY, 
+        name VARCHAR NOT NULL, 
+        surname VARCHAR NOT NULL, 
+        email VARCHAR NOT NULL);'''
+        )
+    cur.execute(
+        '''CREATE TABLE IF NOT EXISTS Phones
+        (id SERIAL PRIMARY KEY, 
+        phone VARCHAR NOT NULL,
+        client_id INTEGER REFERENCES Clients(id));'''
+        )
+    conn.commit()
     pass
 
 
-def add_client(conn, first_name, last_name, email, phones=None):
-    with conn.cursor() as cur:
-        cur.execute(
-            '''INSERT INTO Clients(name, surname, email) 
-            VALUES(%s, %s, %s);''', 
-            (first_name, last_name, email, )
-            )
-        cur.execute(
-            '''INSERT INTO Phones(phone)
-            VALUES (%s);''',
-            (phones, )
-            )
-        cur.execute(
-            '''INSERT INTO Clients_phones (client_id, phone_id)
-            VALUES(
-                (SELECT id FROM Clients WHERE name = %s),
-                (SELECT id FROM Phones WHERE phone = %s)
-                );''',
-            (first_name, phones, )
-            )
-        conn.commit()
+def add_client(cur, first_name, last_name, email, phones=None):
+    cur.execute(
+        '''INSERT INTO Clients(name, surname, email) 
+        VALUES(%s, %s, %s);''', 
+        (first_name, last_name, email, )
+        )
+    cur.execute(
+        '''INSERT INTO Phones(phone, client_id)
+        VALUES (%s, (SELECT id FROM Clients WHERE name = %s));''',
+        (phones,first_name, )
+        )
+    conn.commit()
     pass
 
 
-def add_phone(conn, phone, client_id):
-    with conn.cursor() as cur:
-        cur.execute(
-            '''INSERT INTO Phones (phone)
-            VALUES(%s);''',
-            (phone, )
-            )
-        cur.execute(
-            '''INSERT INTO Clients_phones(client_id, phone_id)
-            VALUES(%s, (SELECT id FROM Phones WHERE phone = %s));''',
-            (client_id, phone, )
-            )
-        conn.commit()
+def add_phone(cur, phone, client_id):
+    cur.execute(
+        '''INSERT INTO Phones (phone)
+        VALUES(%s, %s);''',
+        (phone, client_id, )
+        )
+    conn.commit()
     pass
 
 
-def change_client(conn, client_id, first_name=None, last_name=None, email=None, phones=None):
-    with conn.cursor() as cur:
+def change_client(cur):
+    client_id = input('Введите id клиента, данные которого хотите поменять: ')
+    ans_1= input('Введите один тип данных клиента, который хотите поменять (имя, фамилия, email или телефон): ')
+    if ans_1 == 'имя':
+        ans_2 = input('Напишите новое имя для выбраного клиента: ')
         cur.execute(
             '''UPDATE Clients
-            SET name = %s, surname = %s, email = %s
+            SET name = %s
             WHERE id = %s;''',
-            (first_name, last_name, email, client_id, )
+            (ans_2, client_id, )
             )
+    if ans_1 == 'фамилия':
+        ans_3 = input('Напишите новую фамилию для выбраного клиента: ')
+        cur.execute(
+            '''UPDATE Clients
+            SET surname = %s
+            WHERE id = %s;''',
+            (ans_3, client_id, )
+            )
+    if ans_1 == 'email':
+        ans_4 = input('Напишите новвый email для выбраного клиента: ')
+        cur.execute(
+            '''UPDATE Clients
+            SET email = %s
+            WHERE id = %s;''',
+            (ans_4, client_id, )
+            )
+    if ans_1 == 'телефон':
+        ans_5 = input('Напишите новый телефон для выбраного клиента: ')
         cur.execute(
             '''UPDATE Phones
             SET phone = %s
-            WHERE id = (
-            SELECT ph.id FROM Phones ph
-            JOIN Clients_phones cp ON ph.id = cp.phone_id
-            JOIN Clients c ON cp.client_id = c.id
-            WHERE c.id = %s
-            LIMIT 1);''',
-            (phones, client_id, )
+            WHERE client_id = %s;''',
+            (ans_5, client_id, )
             )
-        conn.commit()
+    conn.commit()
     pass
 
 
-def delete_phone(conn, phone):
-    with conn.cursor() as cur:
-        cur.execute(
-            '''DELETE FROM Clients_Phones
-            WHERE phone_id = (
-                SELECT cp.phone_id FROM Clients_Phones cp
-                JOIN Phones p ON cp.phone_id = p.id
-                WHERE p.phone = %s);''',
-            (phone, )
-            )
-        cur.execute(
-            '''DELETE FROM Phones 
-            WHERE phone = %s;''',
-            (phone, )
-            )
-        conn.commit()
+def delete_phone(cur, phone):
+    cur.execute(
+        '''DELETE FROM Phones 
+        WHERE phone = %s;''',
+        (phone, )
+        )
+    conn.commit()
     pass
 
 
-def delete_client(conn, client_id):
-    with conn.cursor() as cur:
-        cur.execute(
-            '''DELETE FROM Clients_Phones
-            WHERE client_id = (
-                SELECT cp.client_id FROM Clients_Phones cp
-                JOIN Clients c ON cp.client_id = c.id
-                WHERE c.id = %s);''',
-                (client_id, )
-                )
-        cur.execute(
-            '''DELETE FROM Clients 
-            WHERE id = %s;''',
-            (client_id, )
-            )
-        conn.commit()
+def delete_client(cur, client_id):
+    cur.execute(
+        '''DELETE FROM Phones 
+        WHERE client_id = %s;''',
+        (client_id, )
+        )
+    cur.execute(
+        '''DELETE FROM Clients 
+        WHERE id = %s;''',
+        (client_id, )
+        )
+    conn.commit()
     pass
             
 
-def find_client(conn, data):
-     with conn.cursor() as cur:
-        cur.execute(
-            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-            JOIN Clients_phones cp ON c.id = cp.client_id
-            JOIN Phones p ON cp.phone_id = p.id
-            WHERE c.name = %s;''',
-            (data, )
-            )
-        result = cur.fetchall()
-        if len(result) > 0:
-            print(result)
-        cur.execute(
-            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-            JOIN Clients_phones cp ON c.id = cp.client_id
-            JOIN Phones p ON cp.phone_id = p.id
-            WHERE c.surname = %s;''',
-            (data, )
-            )
-        result = cur.fetchall()
-        if len(result) > 0:
-            print(result)
-        cur.execute(
-            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-            JOIN Clients_phones cp ON c.id = cp.client_id
-            JOIN Phones p ON cp.phone_id = p.id
-            WHERE c.email = %s;''',
-            (data, )
-            )
-        result = cur.fetchall()
-        if len(result) > 0:
-            print(result)
-        cur.execute(
-            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-            JOIN Clients_phones cp ON c.id = cp.client_id
-            JOIN Phones p ON cp.phone_id = p.id
-            WHERE p.phone = %s;''',
-            (data, )
-            )
-        result = cur.fetchall()
-        if len(result) > 0:
-            print(result)
-     pass
+def find_client(cur, data):
+    cur.execute(
+        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+        JOIN Phones p ON c.id = p.client_id
+        WHERE c.name = %s;''',
+        (data, )
+        )
+    result = cur.fetchall()
+    if len(result) > 0:
+        print(result)
+    cur.execute(
+        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+        JOIN Phones p ON c.id = p.client_id
+        WHERE c.surname = %s;''',
+        (data, )
+        )
+    result = cur.fetchall()
+    if len(result) > 0:
+        print(result)
+    cur.execute(
+        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+        JOIN Phones p ON c.id = p.client_id
+        WHERE c.email = %s;''',
+        (data, )
+        )
+    result = cur.fetchall()
+    if len(result) > 0:
+        print(result)
+    cur.execute(
+        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+        JOIN Phones p ON c.id = p.client_id
+        WHERE p.phone = %s;''',
+        (data, )
+        )
+    result = cur.fetchall()
+    if len(result) > 0:
+        print(result)
+    pass
 
 if __name__ == '__main__':
-    conn = psycopg2.connect(database = 'client_management', user = 'postgres', password = '')
-    
+   with psycopg2.connect(database = 'client_management', user = 'postgres', password = 'postgres') as conn:
+    with conn.cursor() as cur:
+        create_db(cur)
+        add_client(cur, 'Alex', 'Bogatyrev', 'a.bogatyrev@gmail.com', '+79350466002')
+        add_client(cur, 'Paha', 'Bogatyrev', 'p.bogatyrev@gmail.com', '+70000099999')
+        add_client(cur, 'Ann', 'Mancher', 'ancher.mancher@fdfd.com', '+72341234232')
+        add_client(cur, 'Artiom', 'Bessudnov', 'a.bessudnov@gmail.com', '+79999999990')
+        find_client(cur, 'ancher.mancher@fdfd.com')
+        find_client(cur, 'Bogatyrev')
+        find_client(cur, 'Artiom')
+        find_client(cur, '+79999999990')
+        change_client(cur)
+
+        
+
+
+
+
