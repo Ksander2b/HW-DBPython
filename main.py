@@ -44,40 +44,34 @@ def add_phone(cur, phone, client_id):
     pass
 
 
-def change_client(cur):
-    client_id = input('Введите id клиента, данные которого хотите поменять: ')
-    ans_1= input('Введите один тип данных клиента, который хотите поменять (имя, фамилия, email или телефон): ')
-    if ans_1 == 'имя':
-        ans_2 = input('Напишите новое имя для выбраного клиента: ')
+def change_client(cur, client_id, first_name = None, last_name = None, email = None, phones = None):
+    if first_name is not None:
         cur.execute(
             '''UPDATE Clients
             SET name = %s
-            WHERE id = %s;''',
-            (ans_2, client_id, )
+            WHERE id = %s AND name <> %s;''',
+            (first_name, client_id, first_name, )
             )
-    if ans_1 == 'фамилия':
-        ans_3 = input('Напишите новую фамилию для выбраного клиента: ')
+    elif first_name is not None:
         cur.execute(
             '''UPDATE Clients
             SET surname = %s
-            WHERE id = %s;''',
-            (ans_3, client_id, )
+            WHERE id = %s AND surname <> %s;''',
+            (last_name, client_id, last_name)
             )
-    if ans_1 == 'email':
-        ans_4 = input('Напишите новвый email для выбраного клиента: ')
+    elif email is not None:
         cur.execute(
             '''UPDATE Clients
             SET email = %s
-            WHERE id = %s;''',
-            (ans_4, client_id, )
+            WHERE id = %s AND email <> %s;''',
+            (email, client_id, email )
             )
-    if ans_1 == 'телефон':
-        ans_5 = input('Напишите новый телефон для выбраного клиента: ')
+    elif phones is not None:
         cur.execute(
             '''UPDATE Phones
             SET phone = %s
-            WHERE client_id = %s;''',
-            (ans_5, client_id, )
+            WHERE client_id = %s AND phone <> %s;''',
+            (phones, client_id, phones)
             )
     conn.commit()
     pass
@@ -108,43 +102,24 @@ def delete_client(cur, client_id):
     pass
             
 
-def find_client(cur, data):
-    cur.execute(
-        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Phones p ON c.id = p.client_id
-        WHERE c.name = %s;''',
-        (data, )
-        )
-    result = cur.fetchall()
-    if len(result) > 0:
-        print(result)
-    cur.execute(
-        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Phones p ON c.id = p.client_id
-        WHERE c.surname = %s;''',
-        (data, )
-        )
-    result = cur.fetchall()
-    if len(result) > 0:
-        print(result)
-    cur.execute(
-        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Phones p ON c.id = p.client_id
-        WHERE c.email = %s;''',
-        (data, )
-        )
-    result = cur.fetchall()
-    if len(result) > 0:
-        print(result)
-    cur.execute(
-        '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
-        JOIN Phones p ON c.id = p.client_id
-        WHERE p.phone = %s;''',
-        (data, )
-        )
-    result = cur.fetchall()
-    if len(result) > 0:
-        print(result)
+def find_client(cur, first_name = None, last_name = None, email = None, phones = None):
+    if phones is not None:
+        cur.execute(
+            '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+            JOIN Phones p ON c.id = p.client_id
+            WHERE c.name LIKE %s OR c.surname LIKE %s 
+            OR c.email LIKE %s OR p.phone LIKE %s;''',
+            (first_name, last_name, email, phones, )
+            )
+    else:
+        cur.execute(
+             '''SELECT c.name, c.surname, c.email, p.phone FROM Clients c
+            JOIN Phones p ON c.id = p.client_id
+            WHERE c.name LIKE %s OR c.surname LIKE %s 
+            OR c.email LIKE %s;''',
+            (first_name, last_name, email, )
+            )
+    print(cur.fetchall())
     pass
 
 if __name__ == '__main__':
